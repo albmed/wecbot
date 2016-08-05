@@ -6,7 +6,8 @@
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Options.hpp>
- 
+
+#include <typeinfo>
 #include <iostream>
 #include <string>
  

@@ -27,3 +27,9 @@
 *.exe
 *.out
 *.app
+
+#Other files
+**/*~
+curl_download
+example1
+libxml2-example
