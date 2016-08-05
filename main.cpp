@@ -1,5 +1,5 @@
 /**************************************************************************************************************/
-/* Conjunt de proves per muntar un wecbot, que sigui capaç                                                    */
+/* Conjunt de proves per muntar un wecbot, que sigui capaÃ§                                                    */
 /* de descobrir jugadors que cumpleixin els requisits                                                         */
 /* Per compilar-ho:                                                                                           */
 /*  g++ -std=c++11 -Wall -g -o main main.cpp parsehtml.cpp -I/usr/include/libxml2 -L/usr/lib -lxml2 -liconv \ */

@@ -23,7 +23,7 @@ class StatUser {
 unsigned const SEASON = 0; 
 unsigned const GLOBAL = 1; 
 
-/* TODO: Transformant a map i movent a una funció */ 
+/* TODO: Transformant a map i movent a una funciÃ³ */ 
 
 typedef std::map<unsigned, StatUser> StatsUser; 
 
