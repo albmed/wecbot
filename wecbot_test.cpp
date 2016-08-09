@@ -385,5 +385,5 @@ bool check4DirectRule(std::vector<StatUser>& statsUser, std::string& reason) {
 	}
 
 	reason = buff.str(); 
-	return reason; 
+	return result; 
 }
