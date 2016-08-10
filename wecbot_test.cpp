@@ -10,6 +10,7 @@
 #include <vector>
 #include <typeinfo>
 #include <sstream>
+#include <stdexcept>
 
 class StatUser { 
 	public: 
@@ -515,3 +516,4 @@ bool check4VeteranRule(DataUser& dataUser, std::string& reason) {
 	reason = buff.str(); 
 	return result; 
 }
+
