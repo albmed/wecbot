@@ -4,6 +4,7 @@
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <cstdlib> // needed for ato[i/f] functions :( 
@@ -24,6 +25,19 @@ class StatUser {
 			pct = 0.0f; 
 		}
 }; 
+
+class GameHistory { 
+	public: 
+		unsigned games; 
+		unsigned placement;
+		float average; 
+		
+		GameHistory() { 
+			games = 0; 
+			placement = 0;
+			average = 0.0f; 
+		}
+};
 
 class Season {
 	public: 
@@ -49,6 +63,7 @@ class DataUser {
 		std::vector<StatUser> globalStats; 
 		std::vector<Season> previousSeasons; 
 		Season currentSeasson; 
+		GameHistory gameHistory; 
 		unsigned totGames; 
 		
 		DataUser() { 
@@ -66,6 +81,7 @@ void print_xpath_nodes_test(xmlNodeSetPtr nodes);
 
 void getUserStats(std::vector<StatUser>& statsUser, xmlNodePtr node, xmlXPathContextPtr xpathCtx);
 void getPreviousSeasonStats(std::vector<Season>& seasonData, xmlNodePtr node, xmlXPathContextPtr xpathCtx);
+void getGameHistory(GameHistory& gameHistory, xmlNodePtr node, xmlXPathContextPtr xpathCtx);
 unsigned getTotalGames(std::vector<StatUser> stats) ;
 bool check4DirectRule(DataUser& dataUser, std::string& reason);
 bool check4VeteranRule(DataUser& dataUser, std::string& reason); 
@@ -106,7 +122,7 @@ int main(int argc, char** argv) {
 	}
 
 
-	print_xpath_nodes_cpp(xpathObj->nodesetval, std::cout); // here can we set an ofstream 
+	//print_xpath_nodes_cpp(xpathObj->nodesetval, std::cout); // here can we set an ofstream 
 //	print_xpath_nodes(xpathObj->nodesetval, stdout); // Old C way
 
 
@@ -230,7 +246,7 @@ void print_xpath_nodes_test(xmlNodeSetPtr nodes) {
 	DataUser dataUser; 
 	size = (nodes) ? nodes->nodeNr : 0;
 
-	std::cout << "Result (" << size << " nodes):" << std::endl; 
+	//std::cout << "Result (" << size << " nodes):" << std::endl; 
 
 	for(i = 0; i < size; ++i) {
 		if (!nodes->nodeTab[i]) continue;
@@ -249,7 +265,7 @@ void print_xpath_nodes_test(xmlNodeSetPtr nodes) {
 			
 			if (xpathObj) { 
 				if (xpathObj->nodesetval && xpathObj->nodesetval->nodeNr > 0) { 
-					std::cout << "H4 has " << xpathObj->nodesetval->nodeNr << " elements" << std::endl; 
+					//std::cout << "H4 has " << xpathObj->nodesetval->nodeNr << " elements" << std::endl; 
 						
 					for (int j = 0; j < xpathObj->nodesetval->nodeNr; j++) { 
 						xmlNodePtr currNode = xpathObj->nodesetval->nodeTab[j]; 
@@ -265,22 +281,28 @@ void print_xpath_nodes_test(xmlNodeSetPtr nodes) {
 								getUserStats(dataUser.globalStats, nodes->nodeTab[i], xpathCtx); 
 							}
 						}
-						else if (currNode->children && currNode->children->type == XML_ELEMENT_NODE && 
-									currNode->children->children && currNode->children->children->type == XML_TEXT_NODE) { // Find for previous season
+						else if (currNode->children && currNode->children->type == XML_ELEMENT_NODE) { 
+							if (currNode->children->children && currNode->children->children->type == XML_ELEMENT_NODE && 
+									currNode->children->children->children && currNode->children->children->children->type == XML_TEXT_NODE) { // Game History
+								std::string ctnt = std::string((char *) currNode->children->children->children->content); 
+								
+								if (ctnt.find("Game History") != std::string::npos) { 
+									//std::cout << "In GameHistory <------- " << std::endl; 
+									getGameHistory(dataUser.gameHistory, nodes->nodeTab[i]->parent, xpathCtx);
+								}
+							}
+							else if (currNode->children->children && currNode->children->children->type == XML_TEXT_NODE) {  // Previous Season 
 								std::string ctnt = std::string((char *) currNode->children->children->content); 
 								
 								if (ctnt.find("Previous Seasons Ranking Statistics") != std::string::npos) { 
-									std::cout << "In HERE <------- " << std::endl; 
-										getPreviousSeasonStats(dataUser.previousSeasons, nodes->nodeTab[i], xpathCtx);
+									//std::cout << "In HERE <------- " << std::endl; 
+									getPreviousSeasonStats(dataUser.previousSeasons, nodes->nodeTab[i], xpathCtx);
 								}
+							}
 						}
 					}
 				}
-				else 
-					std::cout << "H4 has no nodes" << std::endl; 
 			}
-			else 
-				std::cout << "H4 is null" << std::endl; 
 			
 			xmlXPathFreeObject(xpathObj);
 			xmlXPathFreeContext(xpathCtx);
@@ -309,11 +331,18 @@ void print_xpath_nodes_test(xmlNodeSetPtr nodes) {
 		std::cout << "SeasonDate: " << it->seasonDate << "; position: " << it->position << "; score: " << it->score;
 		std::cout << "; playedGames: " << it->playedGames << "; wonGames: " << it->wonGames << "; average: " << it->average << std::endl;
 	}
+
+	std::cout << " == History == " << std::endl; 
+	std::cout << "Games " << dataUser.gameHistory.games << std::endl; 
+	std::cout << "Placement " << dataUser.gameHistory.placement << std::endl; 
+	std::cout << "Average " << dataUser.gameHistory.average << std::endl;
 	
 	std::string reason; 
+	std::cout << " == Direct Rule == " << std::endl; 
 	check4DirectRule(dataUser, reason); 
 	std::cout << reason << std::endl;
 	
+	std::cout << " == Veterans Rule == " << std::endl; 
 	check4VeteranRule(dataUser, reason);
 	std::cout << reason << std::endl;
 	
@@ -324,11 +353,11 @@ void getUserStats(std::vector<StatUser>& statsUser, xmlNodePtr node, xmlXPathCon
 	xmlXPathObjectPtr xpathTr = xmlXPathNodeEval(node, (const xmlChar *) "table/tr", xpathCtx); 
 	
 	if (xpathTr && xpathTr->nodesetval) { 
-		std::cout << "TR has " << xpathTr->nodesetval->nodeNr << " elements" << std::endl; 
+		//std::cout << "TR has " << xpathTr->nodesetval->nodeNr << " elements" << std::endl; 
 
 		for (int k = 1; k < xpathTr->nodesetval->nodeNr; k++) {  // element 0 is header
 			xmlXPathObjectPtr xpathTd = xmlXPathNodeEval(xpathTr->nodesetval->nodeTab[k], (const xmlChar *) "td", xpathCtx); 
-			std::cout << "TD has " << xpathTd->nodesetval->nodeNr << " elements" << std::endl; 
+			//std::cout << "TD has " << xpathTd->nodesetval->nodeNr << " elements" << std::endl; 
 
 			StatUser stat; 
 			bool parseable = true; 
@@ -436,6 +465,56 @@ void getPreviousSeasonStats(std::vector<Season>& seasonData, xmlNodePtr node, xm
 	
 }
 
+void getGameHistory(GameHistory& gameHistory, xmlNodePtr node, xmlXPathContextPtr xpathCtx) { 
+
+	unsigned weights[] = {24, 16, 10, 6, 3, 2, 1, 0, 0, 0};
+	unsigned games = 0; 
+	unsigned placement = 0;
+	float average = 0.0f;  
+	
+	xmlXPathObjectPtr xpathTr = xmlXPathNodeEval(node, (const xmlChar *) "table/tr", xpathCtx); 
+
+	if (xpathTr && xpathTr->nodesetval) { 
+		//std::cout << "TR has " << xpathTr->nodesetval->nodeNr << " elements" << std::endl; 
+
+		for (int k = 1; k < xpathTr->nodesetval->nodeNr && games < 100; k++) {  // element 0 is header, get only first 100 games
+			xmlXPathObjectPtr xpathTd = xmlXPathNodeEval(xpathTr->nodesetval->nodeTab[k], (const xmlChar *) "td", xpathCtx); 
+			//std::cout << "TD has " << xpathTd->nodesetval->nodeNr << " elements" << std::endl;  // Should have 4
+			
+			if (xpathTd->nodesetval->nodeNr < 4) continue; 
+			
+			xmlNodePtr currNode = xpathTd->nodesetval->nodeTab[3]; // Get fourth element 
+			
+			if (currNode->children && currNode->children->children && currNode->children->children->type == XML_TEXT_NODE) { 
+				char* data = (char *) currNode->children->children->content; 
+				
+				unsigned position = 0; 
+				
+				try { 
+					position = std::atoi(data);
+				}
+				catch (std::invalid_argument &eInv) {}  // Do nothing 
+				
+				if (position > 0) { 
+					games++;
+					placement += weights[position - 1]; 
+				}
+				
+			}
+			xmlXPathFreeObject(xpathTd);
+		}
+	}
+	
+	if (games > 0) average = static_cast<double>(placement)/static_cast<double>(games);
+	
+	gameHistory.games = games; 
+	gameHistory.placement = placement; 
+	gameHistory.average = average; 
+	
+	xmlXPathFreeObject(xpathTr);
+
+}
+
 unsigned getTotalGames(std::vector<StatUser> stats) { 
 	
 	unsigned count = 0; 
@@ -510,7 +589,43 @@ bool check4VeteranRule(DataUser& dataUser, std::string& reason) {
 		buff << "Not enough games (" << dataUser.totGames << ")"; 
 	}
 	else { 
-		buff << "TODO :) "; 
+		unsigned games = 0; 
+		unsigned gamesTot = 0; 
+		float average = 0.0f;
+		
+		games = dataUser.gameHistory.games; 
+		gamesTot += games; 
+		
+		float avg = static_cast<double>(games)*dataUser.gameHistory.average; 
+		
+		std::vector<Season> previousSeasons = dataUser.previousSeasons; 
+		
+		std::vector<Season>::iterator it_beg = previousSeasons.begin();
+		std::vector<Season>::iterator it_end = previousSeasons.end();
+		
+		while (it_beg != it_end) { 
+			games = it_beg->playedGames; 
+			average = it_beg->average; 
+			
+			if (games > 100) games = 100; 
+			
+			gamesTot += games; 
+			avg += games*average; 
+			
+			if (gamesTot >= 300) break; 
+	
+			++it_beg;
+		}
+		
+		avg = avg/static_cast<double>(gamesTot);  
+		
+		if (avg >= 9.0) { 
+			buff << "Passes " << avg; 
+			result = true; 
+		}
+		else {
+			buff << "NOT Passes " << avg; 
+		}
 	}
 
 	reason = buff.str(); 
