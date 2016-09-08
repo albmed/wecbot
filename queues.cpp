@@ -12,30 +12,6 @@ boost::mutex m_queueMutex;
 
 // To compile: g++ -g -o queues queues.cpp  -lboost_thread -lboost_system -lboost_chrono 
 
-
-
-/*int main ()
-{
-	std::string data; 
-
-	std::cout << "Please enter some integers (enter 0 to end):\n";
-
-	do {
-		std::cin >> data;
-		myqueue.push (data);
-	} while (data != "0");
-
-	std::cout << "myqueue contains: ";
-	while (!myqueue.empty())
-	{
-		std::cout << ' ' << myqueue.front();
-		myqueue.pop();
-	}
-	std::cout << '\n';
-
-	return 0;
-}*/
-
 void push(std::string& val) { 
 	
 	boost::mutex::scoped_lock lock(m_queueMutex);
@@ -56,9 +32,8 @@ std::string pop() {
 }
 
 
-void wait(int seconds)
-{
-  boost::this_thread::sleep_for(boost::chrono::seconds(seconds));
+void wait(int seconds) {
+	boost::this_thread::sleep_for(boost::chrono::seconds(seconds));
 }
 
 void consume () { 
@@ -75,8 +50,7 @@ void consume () {
 	std::cout << "[CONS] -- Quiting.. " << std::endl; 
 }
 
-void produce()
-{
+void produce() {
 	std::string data; 
 		
 	do { 
