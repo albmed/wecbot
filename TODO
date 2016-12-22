@@ -1,2 +1,4 @@
 - Té dependència de c++11, caldria treure-la, per a poder afegir-la al project pth. Potser no podrem fer servir libxml++, llavors faríem servir la versió c: libxml2, que té menys dependències externes. 
 - Crear un fitxer de makefile, si és possible. 
+
+Test webhook :) 
